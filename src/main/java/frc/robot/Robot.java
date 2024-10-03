@@ -5,15 +5,11 @@
 
 package frc.robot;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj2.command.*;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Shooter;
 
 
 /**
@@ -22,86 +18,25 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * the package after creating this project, you must also update the build.gradle file in the
  * project.
  */
-public class Robot extends TimedRobot
-{
-    private static final String DEFAULT_AUTO = "Default";
-    private static final String CUSTOM_AUTO = "My Auto";
-    private String autoSelected;
-    private final SendableChooser<String> chooser = new SendableChooser<>();
-    private final VictorSPX driveLeftFront = new VictorSPX(2);
-    private final VictorSPX driveLeftRear = new VictorSPX(1);
-    private final VictorSPX driveRightFront = new VictorSPX(4);
-    private final VictorSPX driveRightRear = new VictorSPX(3);
-    private final VictorSPX feeder = new VictorSPX(5);
-    private final VictorSPX shooter = new VictorSPX(6);
+public class Robot extends TimedRobot {
     private final CommandXboxController controller = new CommandXboxController(0);
-    private final Subsystem sIntake = new SubsystemBase() {};
-    private final Subsystem sShooter = new SubsystemBase() {};
+    private final Shooter shooter = new Shooter();
+    private final Drivetrain drivetrain = new Drivetrain();
 
-    public Command commandShooter() {
-        return Commands.parallel(
-                Commands.startEnd(
-                        () -> shooter.set(ControlMode.PercentOutput, 1),
-                        () -> shooter.set(ControlMode.PercentOutput, 0),
-                        sShooter
-                ),
 
-                Commands.waitSeconds(0.2)
-                        .andThen(Commands.startEnd(
-                                () -> feeder.set(ControlMode.PercentOutput, 1),
-                                () -> feeder.set(ControlMode.PercentOutput, 0),
-                                sIntake
-                        ))
-        );
-    }
-    public Command commandIntake() {
-        return Commands.parallel(
-                Commands.startEnd(
-                        () -> feeder.set(ControlMode.PercentOutput, -1),
-                        () -> feeder.set(ControlMode.PercentOutput, 0),
-                        sIntake
-                ),
-                Commands.startEnd(
-                        () -> shooter.set(ControlMode.PercentOutput, -1),
-                        () -> shooter.set(ControlMode.PercentOutput, 0),
-                        sShooter
-                )
-        );
-    }
-    
     /**
      * This method is run when the robot is first started up and should be used for any
      * initialization code.
      */
     @Override
-    public void robotInit()
-    {
+    public void robotInit() {
         CommandScheduler.getInstance().enable();
-        shooter.setNeutralMode(NeutralMode.Coast);
-        shooter.setInverted(false);
 
-        feeder.setNeutralMode(NeutralMode.Coast);
-        shooter.setInverted(false);
-
-        driveLeftFront.setNeutralMode(NeutralMode.Brake);
-        driveRightFront.setNeutralMode(NeutralMode.Brake);
-        driveLeftRear.setNeutralMode(NeutralMode.Brake);
-        driveRightRear.setNeutralMode(NeutralMode.Brake);
-
-
-        driveLeftFront.setInverted(true);
-        driveLeftRear.setInverted(true);
-        driveRightFront.setInverted(false);
-        driveRightRear.setInverted(false);
-
-       driveLeftRear.follow(driveLeftFront);
-       driveRightRear.follow(driveRightFront);
-
-       controller.leftBumper().whileTrue(this.commandShooter());
-       controller.rightBumper().whileTrue(this.commandIntake());
+        controller.leftBumper().whileTrue(shooter.commandShoot());
+        controller.rightBumper().whileTrue(shooter.commandIntake());
     }
-    
-    
+
+
     /**
      * This method is called every 20 ms, no matter the mode. Use this for items like diagnostics
      * that you want ran during disabled, autonomous, teleoperated and test.
@@ -112,11 +47,9 @@ public class Robot extends TimedRobot
     @Override
     public void robotPeriodic() {
         CommandScheduler.getInstance().run();
-//        System.out.println(controller.leftBumper().getAsBoolean());
-//        System.out.println(controller.getLeftY());
     }
-    
-    
+
+
     /**
      * This autonomous (along with the chooser code above) shows how to select between different
      * autonomous modes using the dashboard. The sendable chooser code works with the Java
@@ -128,69 +61,83 @@ public class Robot extends TimedRobot
      * chooser code above as well.
      */
     @Override
-    public void autonomousInit()
-    {
+    public void autonomousInit() {
 
     }
-    
-    
-    /** This method is called periodically during autonomous. */
+
+
+    /**
+     * This method is called periodically during autonomous.
+     */
     @Override
-    public void autonomousPeriodic()
-    {
-        switch (autoSelected)
-        {
-            case CUSTOM_AUTO:
-                // Put custom auto code here
-                break;
-            case DEFAULT_AUTO:
-            default:
-                // Put default auto code here
-                break;
-        }
+    public void autonomousPeriodic() {
     }
-    
-    
-    /** This method is called once when teleop is enabled. */
+
+
+    /**
+     * This method is called once when teleop is enabled.
+     */
     @Override
     public void teleopInit() {
     }
-    
-    
-    /** This method is called periodically during operator control. */
+
+
+    /**
+     * This method is called periodically during operator control.
+     */
     @Override
     public void teleopPeriodic() {
-        driveLeftFront.set(ControlMode.PercentOutput, controller.getLeftY()-controller.getRightX());
-        driveRightFront.set(ControlMode.PercentOutput, controller.getLeftY()+controller.getRightX());
+        drivetrain.drive(
+                controller.getLeftY() + controller.getRightX(),
+                controller.getLeftY() - controller.getRightX()
+        );
     }
-    
-    
-    /** This method is called once when the robot is disabled. */
+
+
+    /**
+     * This method is called once when the robot is disabled.
+     */
     @Override
-    public void disabledInit() {}
-    
-    
-    /** This method is called periodically when disabled. */
+    public void disabledInit() {
+    }
+
+
+    /**
+     * This method is called periodically when disabled.
+     */
     @Override
-    public void disabledPeriodic() {}
-    
-    
-    /** This method is called once when test mode is enabled. */
+    public void disabledPeriodic() {
+    }
+
+
+    /**
+     * This method is called once when test mode is enabled.
+     */
     @Override
-    public void testInit() {}
-    
-    
-    /** This method is called periodically during test mode. */
+    public void testInit() {
+    }
+
+
+    /**
+     * This method is called periodically during test mode.
+     */
     @Override
-    public void testPeriodic() {}
-    
-    
-    /** This method is called once when the robot is first started up. */
+    public void testPeriodic() {
+    }
+
+
+    /**
+     * This method is called once when the robot is first started up.
+     */
     @Override
-    public void simulationInit() {}
-    
-    
-    /** This method is called periodically whilst in simulation. */
+    public void simulationInit() {
+    }
+
+
+    /**
+     * This method is called periodically whilst in simulation.
+     */
     @Override
-    public void simulationPeriodic() {}
+    public void simulationPeriodic() {
+    }
 }
