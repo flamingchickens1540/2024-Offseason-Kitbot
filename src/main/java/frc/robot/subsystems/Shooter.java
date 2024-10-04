@@ -22,7 +22,6 @@ public class Shooter extends SubsystemBase {
     public void set(double feederSpeed, double shooterSpeed) {
         feeder.set(ControlMode.PercentOutput, feederSpeed);
         shooter.set(ControlMode.PercentOutput, shooterSpeed);
-        System.out.println(feederSpeed+ " | "+shooterSpeed);
     }
 
 
@@ -38,11 +37,19 @@ public class Shooter extends SubsystemBase {
         );
     }
 
+    public Command commandOuttake() {
+        return Commands.startEnd(
+                () -> this.set(0.8, 0.5),
+                this::stop,
+                this
+        );
+    }
+
     public Command commandShoot() {
         Command command = Commands.parallel(
                 Commands
                         .runOnce(() -> this.set(0,1))
-                        .andThen(Commands.waitSeconds(0.2))
+                        .andThen(Commands.waitSeconds(0.5))
                         .andThen(Commands.runOnce(() -> this.set(1,1))),
                 Commands.startEnd(() -> {}, this::stop)
         );

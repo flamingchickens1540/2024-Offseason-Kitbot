@@ -7,6 +7,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Shooter;
@@ -34,6 +35,8 @@ public class Robot extends TimedRobot {
 
         controller.leftBumper().whileTrue(shooter.commandShoot());
         controller.rightBumper().whileTrue(shooter.commandIntake());
+        controller.y().whileTrue(shooter.commandOuttake());
+        drivetrain.setDefaultCommand(drivetrain.commandArcadeDrive(controller.getHID()));
     }
 
 
@@ -62,7 +65,14 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void autonomousInit() {
-
+        Commands.sequence(
+        shooter.commandShoot().withTimeout(4),
+                Commands.startEnd(
+                        () -> drivetrain.drive(0.5, 0.5),
+                        () -> drivetrain.drive(0,0),
+                        drivetrain
+                ).withTimeout(1)
+                        ).schedule();
     }
 
 
@@ -87,10 +97,14 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void teleopPeriodic() {
-        drivetrain.drive(
-                controller.getLeftY() + controller.getRightX(),
-                controller.getLeftY() - controller.getRightX()
-        );
+//        drivetrain.drive(
+//                controller.getLeftY() - controller.getRightX(),
+//                controller.getLeftY() + controller.getRightX()
+//        );
+//        drivetrain.drive(
+//                controller.getLeftY(),
+//                controller.getRightY()
+//        );
     }
 
 
