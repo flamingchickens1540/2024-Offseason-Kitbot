@@ -6,9 +6,11 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.subsystems.Climber;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.Shooter;
 
@@ -23,7 +25,8 @@ public class Robot extends TimedRobot {
     private final CommandXboxController controller = new CommandXboxController(0);
     private final Shooter shooter = new Shooter();
     private final Drivetrain drivetrain = new Drivetrain();
-
+    private final Climber climber=new Climber();
+//    private final SendableChooser<String>
 
     /**
      * This method is run when the robot is first started up and should be used for any
@@ -37,6 +40,7 @@ public class Robot extends TimedRobot {
         controller.rightBumper().whileTrue(shooter.commandIntake());
         controller.y().whileTrue(shooter.commandOuttake());
         drivetrain.setDefaultCommand(drivetrain.commandArcadeDrive(controller.getHID()));
+        climber.setDefaultCommand(climber.commandManualClimber(controller.getHID()));
     }
 
 
@@ -65,6 +69,7 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void autonomousInit() {
+
         Commands.sequence(
         shooter.commandShoot().withTimeout(4),
                 Commands.startEnd(

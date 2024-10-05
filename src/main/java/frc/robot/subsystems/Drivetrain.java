@@ -49,4 +49,11 @@ public class Drivetrain extends SubsystemBase {
                 this
         );
     }
+    public Command commandDriveSeconds(double left, double right, double time){
+        return Commands.startEnd(
+                () -> this.drive(left,right),
+                () -> this.drive(0,0),
+                this
+        ).withTimeout(time);
+    }
 }
